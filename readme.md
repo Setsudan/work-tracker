@@ -35,12 +35,14 @@ A secure, Redis-powered work time tracking backend with authentication, automate
 ### Local Development
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/yourusername/work-tracker.git
    cd work-tracker
    ```
 
 2. **Set up environment variables**
+
    ```bash
    export REDIS_URL=redis://localhost:6379
    export JWT_SECRET=your-dev-secret-key
@@ -48,17 +50,20 @@ A secure, Redis-powered work time tracking backend with authentication, automate
    ```
 
 3. **Run with Docker Compose (recommended)**
+
    ```bash
    docker-compose up -d
    ```
 
 4. **Or run directly with Go**
+
    ```bash
    go mod download
    go run ./cmd/server
    ```
 
 5. **Test the API**
+
    ```bash
    curl http://localhost:8080/v1/health
    ```
@@ -68,6 +73,7 @@ A secure, Redis-powered work time tracking backend with authentication, automate
 See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 
 **Quick Coolify Deploy:**
+
 1. Connect your GitHub repository to Coolify
 2. Set environment variables: `REDIS_URL`, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS`
 3. Deploy with the provided `coolify.yml` configuration
@@ -77,28 +83,34 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 The backend provides a comprehensive RESTful API with the following endpoints:
 
 ### Authentication
+
 - `POST /v1/auth/register` - User registration
 - `POST /v1/auth/login` - User login
 - `GET /v1/auth/me` - Get current user profile
 - `POST /v1/auth/logout` - Logout and invalidate session
 
 ### Time Tracking
+
 - `POST /v1/time-logs/toggle` - Create start/stop time log
 - `GET /v1/time-logs` - Get time logs within date range
 
 ### User Management
+
 - `PUT /v1/users/me` - Update user settings
 
 ### Days Off
+
 - `GET /v1/days-off` - List days off
 - `POST /v1/days-off` - Add day off
 - `DELETE /v1/days-off/{dateISO}` - Remove day off
 
 ### Reports
+
 - `GET /v1/timesheets` - Get weekly timesheets
 - `GET /v1/month-recaps` - Get monthly recaps
 
 ### Health
+
 - `GET /v1/health` - Application health check
 
 For complete API documentation with request/response examples, see the [API Documentation](#api-documentation) section below.
@@ -171,16 +183,19 @@ The application runs several automated tasks:
 ## 📊 Business Logic
 
 ### Time Log Toggle Logic
+
 - No previous log → Create START log
 - Last log was START → Create STOP log
 - Last log was STOP → Create START log
 
 ### Lunch Break Calculation
+
 - **2 logs per day**: Total work time minus lunch break
 - **4 logs per day**: (First start to first stop) + (Second start to second stop) - lunch break
 - **Other patterns**: Total work time minus lunch break
 
 ### Overtime Calculation
+
 - Daily overtime = worked minutes - expected minutes
 - Weekly overtime = sum of daily overtimes
 - Expected daily hours = weekly hours ÷ 5
