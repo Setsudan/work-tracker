@@ -18,10 +18,19 @@ type Config struct {
 func Load() Config {
 	port := getInt("PORT", 8080)
 	redisURL := getString("REDIS_URL", "")
-	jwtSecret := getString("JWT_SECRET", "changeme-dev-only")
+	jwtSecret := getString("JWT_SECRET", "")
 	jwtTTL := getInt("JWT_TTL_HOURS", 24*14)
 	tz := getString("TIMEZONE", "Europe/Paris")
 	origins := getString("CORS_ALLOWED_ORIGINS", "*")
+
+	// Validate required environment variables
+	if redisURL == "" {
+		panic("REDIS_URL environment variable is required")
+	}
+	if jwtSecret == "" {
+		panic("JWT_SECRET environment variable is required")
+	}
+
 	return Config{
 		Port:            port,
 		RedisURL:        redisURL,

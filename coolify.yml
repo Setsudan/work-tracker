@@ -1,0 +1,104 @@
+name: work-tracker
+description: Work time tracking backend with Redis and JWT authentication
+
+# Build configuration
+build:
+  dockerfile: Dockerfile
+  context: .
+
+# Application configuration
+application:
+  port: 8080
+  healthcheck:
+    path: /v1/health
+    interval: 30s
+    timeout: 10s
+    retries: 3
+    start_period: 40s
+
+# Environment variables
+environment:
+  - name: REDIS_URL
+    description: Redis connection URL (Upstash recommended)
+    required: true
+    example: rediss://username:password@host:port
+  
+  - name: JWT_SECRET
+    description: Secret key for JWT token signing
+    required: true
+    secret: true
+    example: your-super-secret-jwt-key
+  
+  - name: PORT
+    description: Port to run the application on
+    required: false
+    default: "8080"
+  
+  - name: JWT_TTL_HOURS
+    description: JWT token expiration time in hours
+    required: false
+    default: "336"
+  
+  - name: TIMEZONE
+    description: Default timezone for the application
+    required: false
+    default: "Europe/Paris"
+  
+  - name: CORS_ALLOWED_ORIGINS
+    description: Comma-separated list of allowed CORS origins
+    required: false
+    default: "*"
+
+# Resource limits
+resources:
+  cpu: 0.5
+  memory: 512Mi
+  storage: 1Gi
+
+# Deployment strategy
+deployment:
+  replicas: 1
+  strategy: RollingUpdate
+  maxUnavailable: 0
+  maxSurge: 1
+
+# Networking
+networking:
+  ingress:
+    enabled: true
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - host: work-tracker.yourdomain.com
+        paths:
+          - path: /
+            pathType: Prefix
+
+# Monitoring
+monitoring:
+  enabled: true
+  metrics:
+    - name: http_requests_total
+      type: counter
+      help: "Total number of HTTP requests"
+    - name: http_request_duration_seconds
+      type: histogram
+      help: "HTTP request duration in seconds"
+
+# Backup configuration
+backup:
+  enabled: true
+  schedule: "0 2 * * *"  # Daily at 2 AM
+  retention: 30  # Keep backups for 30 days
+
+# Security
+security:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL

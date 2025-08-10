@@ -1,10 +1,234 @@
-# Work Tracker Backend API Documentation
+# Work Tracker Backend
 
-A secure, Redis-powered work time tracking backend with authentication, automated timesheet generation, and comprehensive reporting.
+A secure, Redis-powered work time tracking backend with authentication, automated timesheet generation, and comprehensive reporting. Built with Go, Redis (Upstash), and JWT authentication.
 
-## Overview
+## 🚀 Features
 
-This backend provides a RESTful API for tracking work hours, managing user settings, generating automated timesheets, and creating monthly work recaps. Built with Go, Redis (Upstash), and JWT authentication.
+- **Secure Authentication** - JWT-based auth with Argon2id password hashing
+- **Time Tracking** - Start/stop time logs with smart toggle logic
+- **Automated Reports** - Weekly timesheets and monthly recaps generated automatically
+- **Days Off Management** - Declare vacation days and holidays
+- **Overtime Tracking** - Automatic calculation of worked vs expected hours
+- **Lunch Break Logic** - Smart deduction based on log patterns
+- **Data Retention** - Automatic cleanup of old data
+- **Production Ready** - Optimized for Coolify deployment with health checks
+
+## 🛠️ Tech Stack
+
+- **Backend**: Go 1.22+
+- **Database**: Redis (Upstash)
+- **Authentication**: JWT with session invalidation
+- **Password Hashing**: Argon2id
+- **HTTP Router**: Chi
+- **Scheduling**: Cron jobs
+- **Containerization**: Docker with multi-stage builds
+- **Deployment**: Coolify-ready with health checks
+
+## 📋 Prerequisites
+
+- Go 1.22 or higher
+- Redis instance (Upstash recommended for production)
+- Docker (for containerized deployment)
+
+## 🚀 Quick Start
+
+### Local Development
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/work-tracker.git
+   cd work-tracker
+   ```
+
+2. **Set up environment variables**
+   ```bash
+   export REDIS_URL=redis://localhost:6379
+   export JWT_SECRET=your-dev-secret-key
+   export CORS_ALLOWED_ORIGINS=http://localhost:3000
+   ```
+
+3. **Run with Docker Compose (recommended)**
+   ```bash
+   docker-compose up -d
+   ```
+
+4. **Or run directly with Go**
+   ```bash
+   go mod download
+   go run ./cmd/server
+   ```
+
+5. **Test the API**
+   ```bash
+   curl http://localhost:8080/v1/health
+   ```
+
+### Production Deployment
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
+
+**Quick Coolify Deploy:**
+1. Connect your GitHub repository to Coolify
+2. Set environment variables: `REDIS_URL`, `JWT_SECRET`, `CORS_ALLOWED_ORIGINS`
+3. Deploy with the provided `coolify.yml` configuration
+
+## 📖 API Documentation
+
+The backend provides a comprehensive RESTful API with the following endpoints:
+
+### Authentication
+- `POST /v1/auth/register` - User registration
+- `POST /v1/auth/login` - User login
+- `GET /v1/auth/me` - Get current user profile
+- `POST /v1/auth/logout` - Logout and invalidate session
+
+### Time Tracking
+- `POST /v1/time-logs/toggle` - Create start/stop time log
+- `GET /v1/time-logs` - Get time logs within date range
+
+### User Management
+- `PUT /v1/users/me` - Update user settings
+
+### Days Off
+- `GET /v1/days-off` - List days off
+- `POST /v1/days-off` - Add day off
+- `DELETE /v1/days-off/{dateISO}` - Remove day off
+
+### Reports
+- `GET /v1/timesheets` - Get weekly timesheets
+- `GET /v1/month-recaps` - Get monthly recaps
+
+### Health
+- `GET /v1/health` - Application health check
+
+For complete API documentation with request/response examples, see the [API Documentation](#api-documentation) section below.
+
+## 🔧 Configuration
+
+### Environment Variables
+
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `REDIS_URL` | Redis connection URL | ✅ | - |
+| `JWT_SECRET` | JWT signing secret | ✅ | - |
+| `PORT` | Application port | ❌ | `8080` |
+| `JWT_TTL_HOURS` | JWT token expiration (hours) | ❌ | `336` (14 days) |
+| `TIMEZONE` | Application timezone | ❌ | `Europe/Paris` |
+| `CORS_ALLOWED_ORIGINS` | Allowed CORS origins | ❌ | `*` |
+
+### Example Configuration
+
+```bash
+# Development
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=dev-secret-key
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+
+# Production
+REDIS_URL=rediss://username:password@host:port
+JWT_SECRET=your-super-secret-jwt-key
+CORS_ALLOWED_ORIGINS=https://yourdomain.com
+```
+
+## 🏗️ Project Structure
+
+```
+work-tracker/
+├── cmd/
+│   └── server/          # Application entry point
+├── internal/
+│   ├── auth/           # JWT authentication
+│   ├── config/         # Configuration management
+│   ├── httpserver/     # HTTP server and routes
+│   ├── model/          # Data models
+│   ├── scheduler/      # Cron jobs and automation
+│   ├── service/        # Business logic
+│   ├── store/          # Redis data access
+│   └── timeutil/       # Time utilities
+├── Dockerfile          # Production container
+├── docker-compose.yml  # Local development
+├── coolify.yml         # Coolify deployment config
+└── DEPLOYMENT.md       # Deployment guide
+```
+
+## 🔄 Automated Tasks
+
+The application runs several automated tasks:
+
+- **Weekly Timesheet Generation** - Every Saturday at 01:00 (Europe/Paris)
+- **Monthly Recap Generation** - 1st day of each month at 02:00 (Europe/Paris)
+- **Data Cleanup** - Daily at 03:30, removes time logs older than 14 days
+
+## 🛡️ Security Features
+
+- **Password Security**: Argon2id hashing with secure parameters
+- **JWT Tokens**: Secure token-based authentication with expiration
+- **Session Management**: Redis-backed session invalidation
+- **CORS Protection**: Configurable cross-origin resource sharing
+- **Container Security**: Non-root user, read-only filesystem
+- **Data Retention**: Automatic cleanup of sensitive data
+
+## 📊 Business Logic
+
+### Time Log Toggle Logic
+- No previous log → Create START log
+- Last log was START → Create STOP log
+- Last log was STOP → Create START log
+
+### Lunch Break Calculation
+- **2 logs per day**: Total work time minus lunch break
+- **4 logs per day**: (First start to first stop) + (Second start to second stop) - lunch break
+- **Other patterns**: Total work time minus lunch break
+
+### Overtime Calculation
+- Daily overtime = worked minutes - expected minutes
+- Weekly overtime = sum of daily overtimes
+- Expected daily hours = weekly hours ÷ 5
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+go test ./...
+
+# Run tests with coverage
+go test -cover ./...
+
+# Build application
+go build ./cmd/server
+```
+
+## 📈 Monitoring
+
+The application includes built-in monitoring:
+
+- **Health Check**: `GET /v1/health` returns application status
+- **Docker Health**: Container health checks for deployment platforms
+- **Logging**: Structured logging for debugging and monitoring
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+- **Documentation**: Check [DEPLOYMENT.md](DEPLOYMENT.md) for deployment issues
+- **API Issues**: Review the API documentation below
+- **General Questions**: Open an issue on GitHub
+
+---
+
+## 📚 API Documentation
+
+This section provides detailed API documentation for frontend developers.
 
 ## Base URL
 
@@ -583,6 +807,53 @@ CORS_ALLOWED_ORIGINS=*
 - Rate limiting recommended for production
 
 ## Deployment
+
+### Coolify Deployment
+
+This application is optimized for deployment on Coolify. Use the provided configuration files:
+
+1. **Dockerfile** - Multi-stage build with security best practices
+2. **coolify.yml** - Coolify-specific configuration
+3. **docker-compose.yml** - Local development setup
+
+#### Quick Deploy on Coolify
+
+1. Connect your GitHub repository to Coolify
+2. Select the repository and branch
+3. Configure environment variables:
+   - `REDIS_URL` - Your Upstash Redis URL
+   - `JWT_SECRET` - Secure random string for JWT signing
+   - `CORS_ALLOWED_ORIGINS` - Your frontend domain(s)
+
+4. Deploy with the provided `coolify.yml` configuration
+
+#### Environment Variables for Production
+
+```bash
+# Required
+REDIS_URL=rediss://username:password@host:port
+JWT_SECRET=your-super-secret-jwt-key
+
+# Optional
+PORT=8080
+JWT_TTL_HOURS=336
+TIMEZONE=Europe/Paris
+CORS_ALLOWED_ORIGINS=https://yourdomain.com
+```
+
+#### Local Development
+
+```bash
+# Using Docker Compose
+docker-compose up -d
+
+# Or build and run manually
+docker build -t work-tracker .
+docker run -p 8080:8080 \
+  -e REDIS_URL=redis://localhost:6379 \
+  -e JWT_SECRET=dev-secret-key \
+  work-tracker
+```
 
 ### Docker Example
 

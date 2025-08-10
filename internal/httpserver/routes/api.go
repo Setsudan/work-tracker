@@ -12,6 +12,9 @@ import (
 func API(cfg config.Config, stores store.Stores) chi.Router {
 	r := chi.NewRouter()
 
+	// Health check endpoint (no auth required)
+	views.RegisterHealthRoutes(r)
+
 	r.Mount("/auth", views.Auth(cfg, stores))
 
 	r.Group(func(pr chi.Router) {
