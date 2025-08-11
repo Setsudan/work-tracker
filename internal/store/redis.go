@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strings"
 
+	"work-tracker/internal/secret"
+
 	"github.com/redis/go-redis/v9"
 )
 
@@ -17,14 +19,16 @@ type Stores struct {
 	DaysOff     *DaysOffStore
 }
 
-func NewStores(c redis.UniversalClient) Stores {
+type cryptoDeps struct{ sec *secret.Secret }
+
+func NewStores(c redis.UniversalClient, sec *secret.Secret) Stores {
 	return Stores{
-		Users:       NewUserStore(c),
+		Users:       NewUserStore(c, sec),
 		Sessions:    NewSessionStore(c),
-		TimeLogs:    NewTimeLogStore(c),
-		TimeSheets:  NewTimeSheetStore(c),
-		MonthRecaps: NewMonthRecapStore(c),
-		DaysOff:     NewDaysOffStore(c),
+		TimeLogs:    NewTimeLogStore(c, sec),
+		TimeSheets:  NewTimeSheetStore(c, sec),
+		MonthRecaps: NewMonthRecapStore(c, sec),
+		DaysOff:     NewDaysOffStore(c, sec),
 	}
 }
 
