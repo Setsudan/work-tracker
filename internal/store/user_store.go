@@ -15,11 +15,50 @@ import (
 
 type UserStore struct{ r redis.UniversalClient; sec *secret.Secret }
 
+type userRecord struct {
+	ID                       string    `json:"id"`
+	Email                    string    `json:"email"`
+	PasswordHash             string    `json:"passwordHash"`
+	FullName                 string    `json:"fullName"`
+	WeeklyHours              float64   `json:"weeklyHours"`
+	DefaultLunchBreakMinutes int       `json:"defaultLunchBreakMinutes"`
+	Timezone                 string    `json:"timezone"`
+	CreatedAt                time.Time `json:"createdAt"`
+	UpdatedAt                time.Time `json:"updatedAt"`
+}
+
+func toRecord(u *model.User) userRecord {
+	return userRecord{
+		ID:                       u.ID,
+		Email:                    u.Email,
+		PasswordHash:             u.PasswordHash,
+		FullName:                 u.FullName,
+		WeeklyHours:              u.WeeklyHours,
+		DefaultLunchBreakMinutes: u.DefaultLunchBreakMinutes,
+		Timezone:                 u.Timezone,
+		CreatedAt:                u.CreatedAt,
+		UpdatedAt:                u.UpdatedAt,
+	}
+}
+
+func toModel(r userRecord) *model.User {
+	return &model.User{
+		ID:                       r.ID,
+		Email:                    r.Email,
+		PasswordHash:             r.PasswordHash,
+		FullName:                 r.FullName,
+		WeeklyHours:              r.WeeklyHours,
+		DefaultLunchBreakMinutes: r.DefaultLunchBreakMinutes,
+		Timezone:                 r.Timezone,
+		CreatedAt:                r.CreatedAt,
+		UpdatedAt:                r.UpdatedAt,
+	}
+}
+
 func NewUserStore(r redis.UniversalClient, sec *secret.Secret) *UserStore { return &UserStore{r: r, sec: sec} }
 
 func (s *UserStore) userKey(id string) string { return fmt.Sprintf("user:%s", id) }
 func (s *UserStore) emailKey(email string) string {
-	// HMAC the email so it is not stored in plaintext keys
 	return fmt.Sprintf("user:email:%s", s.sec.HMACString(email))
 }
 func (s *UserStore) usersSetKey() string { return "users:all" }
@@ -30,7 +69,8 @@ func (s *UserStore) Create(ctx context.Context, u *model.User) error {
 	u.ID = id
 	u.CreatedAt = now
 	u.UpdatedAt = now
-	b, _ := json.Marshal(u)
+	rec := toRecord(u)
+	b, _ := json.Marshal(rec)
 	enc, err := s.sec.Encrypt(b)
 	if err != nil {
 		return err
@@ -61,16 +101,17 @@ func (s *UserStore) GetByID(ctx context.Context, id string) (*model.User, error)
 	if err != nil {
 		return nil, err
 	}
-	var u model.User
-	if err := json.Unmarshal(plaintext, &u); err != nil {
+	var rec userRecord
+	if err := json.Unmarshal(plaintext, &rec); err != nil {
 		return nil, err
 	}
-	return &u, nil
+	return toModel(rec), nil
 }
 
 func (s *UserStore) Update(ctx context.Context, u *model.User) error {
 	u.UpdatedAt = time.Now().UTC()
-	b, _ := json.Marshal(u)
+	rec := toRecord(u)
+	b, _ := json.Marshal(rec)
 	enc, err := s.sec.Encrypt(b)
 	if err != nil {
 		return err
