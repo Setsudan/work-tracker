@@ -12,11 +12,17 @@ import (
 	"work-tracker/internal/config"
 	"work-tracker/internal/httpserver"
 	"work-tracker/internal/scheduler"
+	"work-tracker/internal/secret"
 	"work-tracker/internal/store"
 )
 
 func main() {
 	cfg := config.Load()
+
+	sec, err := secret.New(cfg.DataEncKeyB64)
+	if err != nil {
+		log.Fatalf("invalid DATA_ENCRYPTION_KEY: %v", err)
+	}
 
 	redisClient, err := store.NewRedisClient(cfg.RedisURL)
 	if err != nil {
@@ -24,7 +30,7 @@ func main() {
 	}
 	defer func() { _ = redisClient.Close() }()
 
-	stores := store.NewStores(redisClient)
+	stores := store.NewStores(redisClient, sec)
 
 	srv := httpserver.NewServer(cfg, stores)
 

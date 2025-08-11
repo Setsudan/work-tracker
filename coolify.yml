@@ -28,6 +28,12 @@ environment:
     required: true
     secret: true
     example: your-super-secret-jwt-key
+
+  - name: DATA_ENCRYPTION_KEY
+    description: Base64-encoded 32-byte key used to encrypt data at rest
+    required: true
+    secret: true
+    example: base64-of-32-random-bytes
   
   - name: PORT
     description: Port to run the application on

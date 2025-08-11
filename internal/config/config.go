@@ -13,6 +13,7 @@ type Config struct {
 	JWTTTLHours     int
 	DefaultTimezone string
 	AllowOriginsCSV string
+	DataEncKeyB64   string
 }
 
 func Load() Config {
@@ -22,6 +23,7 @@ func Load() Config {
 	jwtTTL := getInt("JWT_TTL_HOURS", 24*14)
 	tz := getString("TIMEZONE", "Europe/Paris")
 	origins := getString("CORS_ALLOWED_ORIGINS", "*")
+	encKey := getString("DATA_ENCRYPTION_KEY", "")
 
 	// Validate required environment variables
 	if redisURL == "" {
@@ -29,6 +31,9 @@ func Load() Config {
 	}
 	if jwtSecret == "" {
 		panic("JWT_SECRET environment variable is required")
+	}
+	if encKey == "" {
+		panic("DATA_ENCRYPTION_KEY environment variable is required (base64 of 32 random bytes)")
 	}
 
 	return Config{
@@ -38,6 +43,7 @@ func Load() Config {
 		JWTTTLHours:     jwtTTL,
 		DefaultTimezone: tz,
 		AllowOriginsCSV: origins,
+		DataEncKeyB64:   encKey,
 	}
 }
 
