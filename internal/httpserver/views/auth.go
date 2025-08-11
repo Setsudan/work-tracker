@@ -91,10 +91,26 @@ func Auth(cfg config.Config, stores store.Stores) chi.Router {
 			http.Error(w, "invalid credentials", http.StatusUnauthorized)
 			return
 		}
-		ok, _ := argon2id.ComparePasswordAndHash(req.Password, u.PasswordHash)
-		if !ok {
-			http.Error(w, "invalid credentials", http.StatusUnauthorized)
-			return
+
+		// Migration path: if the user was created before password hashes were persisted,
+		// the stored PasswordHash may be empty. In that case, set it now using the provided password.
+		if strings.TrimSpace(u.PasswordHash) == "" {
+			newHash, err := argon2id.CreateHash(req.Password, argon2id.DefaultParams)
+			if err != nil {
+				http.Error(w, "server error", http.StatusInternalServerError)
+				return
+			}
+			u.PasswordHash = newHash
+			if err := stores.Users.Update(r.Context(), u); err != nil {
+				http.Error(w, "server error", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			ok, _ := argon2id.ComparePasswordAndHash(req.Password, u.PasswordHash)
+			if !ok {
+				http.Error(w, "invalid credentials", http.StatusUnauthorized)
+				return
+			}
 		}
 		jti := ulid.Make().String()
 		token, err := auth.IssueToken(u.ID, cfg.JWTSecret, time.Duration(cfg.JWTTTLHours)*time.Hour, jti)
